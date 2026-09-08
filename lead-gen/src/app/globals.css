@@ -165,6 +165,10 @@ table {
   font-size: 0.9rem;
 }
 
+.worklist-table {
+  width: auto;
+}
+
 th,
 td {
   text-align: left;

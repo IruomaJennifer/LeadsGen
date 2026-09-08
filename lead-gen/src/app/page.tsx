@@ -216,7 +216,7 @@ export default function WorklistPage() {
       ) : (
         <section style={{ padding: 0, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
-            <table>
+            <table className="worklist-table">
               <thead>
                 <tr>
                   <th>S/N</th>
