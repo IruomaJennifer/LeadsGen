@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// Column/table names are @map'd to snake_case to match Appendix A's DDL,
+// since Stage 2's bulk upsert (Step 2.5) issues raw SQL against those exact names.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id                String    @id @default(uuid())
+  name              String
+  domain            String?   @unique // normalized; primary dedup key
+  website           String?
+  linkedinUrl       String?   @map("linkedin_url")
+  industry          String? // jobCompanyIndustry
+  description       String? // jobCompanyDescription
+  employeeCount     Int?      @map("employee_count") // jobCompanyEmployeeCount
+  employeeRange     String?   @map("employee_range") // jobCompanyStaffRange (e.g. 1-10, 11-50)
+  foundedYear       Int?      @map("founded_year") // jobCompanyFounded
+  recentJobPostings Int?      @map("recent_job_postings") // jobCompanyNumJobsLastMonth (buying signal)
+  companyType       String?   @map("company_type") // jobCompanyType: direct_employer | recruiting_agency
+  hqCity            String?   @map("hq_city") // jobCompanyCity
+  hqCountry         String?   @map("hq_country") // jobCompanyCountry
+  phone             String? // from Google Places (Stage 3)
+  phoneSource       String?   @map("phone_source")
+  email             String? // user-maintained; editable in the dashboard (not from Datablist)
+  emailSource       String?   @map("email_source") // e.g. manual
+  placesPlaceId     String?   @map("places_place_id")
+  placesLookedUpAt  DateTime? @map("places_looked_up_at") // set even on no-match (prevents re-billing)
+  placesMatchStatus String?   @map("places_match_status") // matched | no_match
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  jobPostings       JobPosting[]
+  lead              Lead?
+  activity          ActivityLog[]
+
+  @@index([placesPlaceId])
+  @@index([placesLookedUpAt])
+  @@map("companies")
+}
+
+model JobPosting {
+  id              String    @id @default(uuid())
+  datablistJobId  String    @unique @map("datablist_job_id") // dedup key for postings
+  companyId       String    @map("company_id")
+  company         Company   @relation(fields: [companyId], references: [id])
+  title           String? // jobTitle
+  description     String? // jobDescription
+  url             String? // jobUrl
+  source          String? // jobSourceUrl (Indeed | LinkedIn Jobs | ...)
+  jobType         String?   @map("job_type") // jobType
+  workplaceType   String?   @map("workplace_type") // jobWorkplaceType: on_site|hybrid|remote
+  seniority       String? // jobSeniority: c_level|staff|senior|junior|mid_level
+  salary          String? // jobSalary
+  location        String? // jobLocation
+  country         String? // jobCountry
+  datePosted      DateTime? @map("date_posted") // jobDatePosted
+  contactName     String?   @map("contact_name") // jobContactName (hiring manager — high-value for outreach)
+  contactRole     String?   @map("contact_role") // jobContactRole
+  contactLinkedin String?   @map("contact_linkedin") // jobContactLinkedIn
+  importedAt      DateTime  @default(now()) @map("imported_at")
+
+  @@index([companyId])
+  @@map("job_postings")
+}
+
+model Lead {
+  id              String    @id @default(uuid())
+  companyId       String    @unique @map("company_id") // one lead per company
+  company         Company   @relation(fields: [companyId], references: [id])
+  status          String    @default("new") // new|contacted|warm|cold|won|lost|dnc
+  assignedTo      String?   @map("assigned_to")
+  lastContactedAt DateTime? @map("last_contacted_at")
+  nextActionAt    DateTime? @map("next_action_at")
+  notes           String?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  activity        ActivityLog[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model ActivityLog {
+  id            String   @id @default(uuid())
+  companyId     String   @map("company_id")
+  company       Company  @relation(fields: [companyId], references: [id])
+  leadId        String?  @map("lead_id")
+  lead          Lead?    @relation(fields: [leadId], references: [id])
+  type          String // status_change | note | contact | call (future)
+  channel       String? // phone | email | phone_and_email | other (for contact activity)
+  channelDetail String?  @map("channel_detail") // free text describing how, required when channel = 'other'
+  fromStatus    String?  @map("from_status")
+  toStatus      String?  @map("to_status")
+  outcome       String?
+  notes         String?
+  createdBy     String?  @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@map("activity_log")
+}
+
+model PipelineRun {
+  id               String    @id @default(uuid())
+  startedAt        DateTime  @default(now()) @map("started_at")
+  finishedAt       DateTime? @map("finished_at")
+  status           String? // success | partial | failed
+  watermarkFrom    DateTime? @map("watermark_from")
+  watermarkTo      DateTime? @map("watermark_to")
+  jobsPulled       Int       @default(0) @map("jobs_pulled")
+  companiesNew     Int       @default(0) @map("companies_new")
+  companiesUpdated Int       @default(0) @map("companies_updated")
+  placesLookups    Int       @default(0) @map("places_lookups")
+  errors           Json?
+
+  @@map("pipeline_runs")
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  passwordHash       String   @map("password_hash")
+  name               String?
+  role               String   @default("user") // "admin" | "user"
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
