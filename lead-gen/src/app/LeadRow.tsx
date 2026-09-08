@@ -37,7 +37,7 @@ export function LeadRow({
   return (
     <tr className="clickable-row" onClick={() => onSelect(lead.id)}>
       <td style={{ color: "var(--text-muted)" }}>{serialNumber}</td>
-      <td style={{ whiteSpace: "nowrap" }}>
+      <td className="col-wrap">
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <span className="avatar" style={{ background: avatarColorFor(lead.company.name) }}>
             {initialFor(lead.company.name)}
@@ -54,7 +54,7 @@ export function LeadRow({
         )}
       </td>
       <td style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{lead.company.email}</td>
-      <td style={{ color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
+      <td className="col-wrap" style={{ color: "var(--text-secondary)" }}>
         {lead.latestRoleUrl ? (
           <a
             href={ensureProtocol(lead.latestRoleUrl)}

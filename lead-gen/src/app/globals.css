@@ -169,6 +169,12 @@ table {
   width: auto;
 }
 
+.worklist-table .col-wrap {
+  max-width: 20rem;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
 th,
 td {
   text-align: left;
