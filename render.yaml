@@ -19,8 +19,6 @@ services:
         fromDatabase:
           name: leadsgen-db
           property: connectionString
-      - key: NODE_ENV
-        value: production
       - key: PIPELINE_TIMEZONE
         value: America/New_York
       - key: ADMIN_NAME
@@ -56,8 +54,6 @@ services:
         fromDatabase:
           name: leadsgen-db
           property: connectionString
-      - key: NODE_ENV
-        value: production
       - key: PIPELINE_TIMEZONE
         value: America/New_York
       - key: ADMIN_NAME
